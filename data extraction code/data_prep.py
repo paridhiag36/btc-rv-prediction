@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-binance = pd.read_csv("../../data/btc_5min_binance_2021_2025.csv")
+binance = pd.read_csv("../data/btc_5min_binance_2021_2025.csv")
 # print(binance.head(10))
 # print(binance.columns)
 
