@@ -9,12 +9,19 @@ START_DATE = "2021-01-01"
 END_DATE   = "2025-12-31"
 
 CHARTS = {
+    # Mining/Security
     "HASH_RATE":        "hash-rate",
     "DIFFICULTY":       "difficulty",
+    "MINERS_REV_USD":   "miners-revenue",
+    # Network Activity
     "TX_COUNT":         "n-transactions",
     "UNIQUE_ADDR":      "n-unique-addresses",
     "FEES_USD":         "transaction-fees-usd",
-    "MINERS_REV_USD":   "miners-revenue",
+    # New additions (for u all to see once)
+    "AVG_BLOCK_SIZE_MB":   "avg-block-size",
+    "MED_CONFIRM_TIME":    "median-confirmation-time",     # often noisy, maybe we caninclude & let model decide
+    "EST_TX_VOL_USD":      "estimated-transaction-volume-usd", # proxy for transaction volume (USD)
+    
 }
 
 OUT_LEVELS   = "../data/onchain_levels_blockchaincom_2021_2025.csv"
@@ -72,6 +79,14 @@ if __name__ == "__main__":
     levels = levels.loc[pd.to_datetime(START_DATE): pd.to_datetime(END_DATE)]
     levels_daily = to_daily_calendar(levels, START_DATE, END_DATE)
 
+    # Construct fees per transaction (USD) = total fees (USD) / tx count
+    txc = levels_daily["TX_COUNT"].replace(0, np.nan)
+    levels_daily["FEES_USD_PER_TX"] = levels_daily["FEES_USD"] / txc
+
+    # Construct "avg transaction value" robustly: avg tx value (USD) = estimated tx value (USD) / tx count [avoid division by 0]
+    txc = levels_daily["TX_COUNT"].replace(0, np.nan)
+    levels_daily["AVG_TX_VALUE_USD"] = levels_daily["EST_TX_VOL_USD"] / txc
+
     # Simple transformations:
     #    - log levels 
     #    - daily log changes (approx growth rates)
@@ -80,14 +95,27 @@ if __name__ == "__main__":
     log_changes = log_levels.diff()
 
     features = pd.DataFrame({
+        # mining/supply side
         "LOG_HASH_RATE":        log_levels["HASH_RATE"], # Mining activity / network security
         "LOG_DIFFICULTY":       log_levels["DIFFICULTY"], # Mining competition
         "DLOG_HASH_RATE":       log_changes["HASH_RATE"], # Short-run changes in mining activity
         "DLOG_DIFFICULTY":      log_changes["DIFFICULTY"], # Changes in mining competition
+        "DLOG_MINERS_REV_USD":  log_changes["MINERS_REV_USD"], # Miner economics. Miner revenue reflects both block rewards and transaction fees.
+
+        # Network usage
         "DLOG_TX_COUNT":        log_changes["TX_COUNT"], # Blockchain demand proxy
         "DLOG_UNIQUE_ADDR":     log_changes["UNIQUE_ADDR"],  # Network participation
+        "DLOG_EST_TX_VOL_USD":  log_changes["EST_TX_VOL_USD"], # Transaction volume (USD) growth, proxy for economic activity on-chain
+
+        # Congestion/fee pressure    
         "DLOG_FEES_USD":        log_changes["FEES_USD"],  # Network congestion
-        "DLOG_MINERS_REV_USD":  log_changes["MINERS_REV_USD"], # Miner economics. Miner revenue reflects both block rewards and transaction fees.
+        "DLOG_FEES_USD_PER_TX": log_changes["FEES_USD_PER_TX"], # Congestion per transaction 
+        "DLOG_AVG_BLOCK_SIZE":  log_changes["AVG_BLOCK_SIZE_MB"], # Block space usage 
+        "DLOG_MED_CONFIRM_TIME": log_changes["MED_CONFIRM_TIME"], # Confirmation time changes
+
+        # "Average transaction value" as a derived series
+        "DLOG_AVG_TX_VALUE_USD": log_changes["AVG_TX_VALUE_USD"], # Growth in average transaction value, proxy for changes in economic activity per transaction
+        
     }).dropna()
 
     # Quick sanity checks
