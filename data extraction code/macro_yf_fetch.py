@@ -115,6 +115,6 @@ print(oil_logret.head(5))
 
 final_macro_df = macro_logret.join(oil_logret, how = "left")
 # Save merged predictors
-final_macro_df.to_csv("../data/final_macro_df.csv", index_label="date")
+#final_macro_df.to_csv("../../data/final_macro_df.csv", index_label="date")
 
-print(final_macro_df.head(10))
+#print(final_macro_df.head(10))
