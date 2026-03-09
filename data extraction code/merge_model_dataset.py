@@ -85,23 +85,17 @@ full_df = full_df.drop(columns = ["RV"])
 print(full_df.head(5))
 
 # Saving the full dataset
-full_df.to_csv("../data/full_df.csv", index=False)
+# full_df.to_csv("../data/full_df.csv", index=False)
 
-# Part 3: Create train test datasets 
+# ---- Part 3: Create train test datasets 
 
 # Sort data again just in case
 full_df = full_df.sort_values("date").reset_index(drop=True)
 
-# defining lagged feature cols
-lagged_feature_cols = [c for c in full_df.columns if "_lag" in c]
-
-# drop rows with any missing lagged X or target
-# full_df = full_df.dropna(subset=lagged_feature_cols + target_cols).reset_index(drop=True)
-full_df = full_df.dropna().reset_index(drop=True)
 # 70-30 split by time
 cut = int(len(full_df) * 0.7)
-train_df = full_df.iloc[:cut].copy() # correct logic but still contains present day values which wouldnt be observed on training/tetsing day so use X_train
-test_df  = full_df.iloc[cut:].copy() # same as above
+train_df = full_df.iloc[:cut].copy() 
+test_df  = full_df.iloc[cut:].copy() 
 
 
 print("Train date range:", train_df["date"].min(), "to", train_df["date"].max(), "rows:", len(train_df))
