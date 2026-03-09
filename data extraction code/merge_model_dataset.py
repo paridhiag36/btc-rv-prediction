@@ -90,7 +90,7 @@ full_df = full_df.sort_values("date").reset_index(drop=True)
 lagged_feature_cols = [c for c in full_df.columns if "_lag" in c]
 
 # drop rows with any missing lagged X or target
-#full_df = full_df.dropna(subset=lagged_feature_cols + target_cols).reset_index(drop=True)
+# full_df = full_df.dropna(subset=lagged_feature_cols + target_cols).reset_index(drop=True)
 full_df = full_df.dropna().reset_index(drop=True)
 # 70-30 split by time
 cut = int(len(full_df) * 0.7)
@@ -132,20 +132,3 @@ X_test_scaled  = scaler.transform(X_test)
 train_df.to_csv("../data/train_dataset.csv", index=False)
 test_df.to_csv("../data/test_dataset.csv", index=False)
 
-X_train.to_csv("../data/X_train.csv", index=False)
-X_test.to_csv("../data/X_test.csv", index=False)
-
-X_train_with_date.to_csv("../data/X_train_with_date.csv", index=False)
-X_test_with_date.to_csv("../data/X_test_with_date.csv", index=False)
-
-y_train_h1.to_csv("../data/y_train_h1.csv", index=False)
-y_test_h1.to_csv("../data/y_test_h1.csv", index=False)
-
-y_train_h3.to_csv("../data/y_train_h3.csv", index=False)
-y_test_h3.to_csv("../data/y_test_h3.csv", index=False)
-
-y_train_h5.to_csv("../data/y_train_h5.csv", index=False)
-y_test_h5.to_csv("../data/y_test_h5.csv", index=False)
-
-y_train_h7.to_csv("../data/y_train_h7.csv", index=False)
-y_test_h7.to_csv("../data/y_test_h7.csv", index=False)
