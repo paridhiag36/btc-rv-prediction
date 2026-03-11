@@ -1,0 +1,7 @@
+target_col=y_h7
+best_units=64
+best_epoch=7
+best_val_loss=1.0714478492736816
+dropout=0.2
+lr=0.001
+batch_size=64
