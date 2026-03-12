@@ -9,8 +9,8 @@ import os
 # --------- CONFIG ----------
 FULL_DATA_PATH = "../data/full_df.csv"  # CHANGE if your full dataset file name differs
 HYPERPARAMS_PATH = "../models/lstm_tuned_hyperparams.csv" #csv saved from lstm_tuning.py
-OUT_PREDS_PATH = "../data/lstm_rolling_oos_predictions.csv" # saving predictions 
-OUT_RMSE_PATH = "../data/lstm_rolling_oos_rmse.csv" # save rmse results 
+OUT_PREDS_PATH = "../forecast evaluations/lstm_rolling_oos_predictions.csv" # saving predictions 
+OUT_RMSE_PATH = "../forecast evaluations/lstm_rolling_oos_rmse.csv" # save rmse results 
 
 DATE_FORMAT = "%Y-%m-%d"
 DATE_COL = "date"
@@ -195,7 +195,7 @@ print("\nRMSE summary:")
 print(rmse_df)
 
 #    h      rmse  units  epochs
-# 0  1  0.830034     64      75
-# 1  3  0.945741     16      66
-# 2  5  0.970876     16      47
-# 3  7  1.041095     64       6
+#   1  0.830034     64      75
+#   3  0.945741     16      66
+#   5  0.970876     16      47
+#   7  1.041095     64       6
