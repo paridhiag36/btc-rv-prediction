@@ -1,7 +1,0 @@
-target_col=y_h5
-best_units=16
-best_epoch=69
-best_val_loss=1.0869489908218384
-dropout=0.2
-lr=0.001
-batch_size=64
