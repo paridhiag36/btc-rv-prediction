@@ -5,7 +5,6 @@ from sklearn.preprocessing import StandardScaler
 from tensorflow.keras import layers
 from tensorflow.keras.callbacks import EarlyStopping
 import os
-import joblib
 
 # Load dataset
 train_df = pd.read_csv("../data/train_dataset.csv")
@@ -101,15 +100,17 @@ def build_lstm(T, p, units, dropout=0.2, lr=1e-3):
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=lr), loss="mse")
     return model
 
-# -----------------
-# Train + Tune Loop
-# -----------------
-def train_tune_retrain_save_for_h(train_df, xt_cols, target_col, h,
+# -----------------------------
+# Tune hyperparameters for LSTM
+# -----------------------------
+def tune_lstm_for_h(train_df, xt_cols, target_col, h,
                                  units_grid=(16,32,64,128),
                                  val_frac=0.2,
                                  dropout=0.2, lr=1e-3,
                                  batch_size=64, epochs=100, patience=8,
-                                 seed=0, save_dir="../models"):
+                                 seed=0):
+    # Drop NA target variables - should be 0
+    train_df = train_df.dropna(subset=[target_col]).copy()
 
     # 1) sequences
     X_all, y_all = make_lag_sequences(train_df, xt_cols, target_col)
@@ -121,7 +122,8 @@ def train_tune_retrain_save_for_h(train_df, xt_cols, target_col, h,
     X_val, y_val = X_all[cut:], y_all[cut:]
 
     # 3) scale (fit on sub-train only)
-    scaler_sub, X_sub_scaled, X_val_scaled = scale_fit_on_train(X_sub, X_val)
+    _, X_sub_scaled, X_val_scaled = scale_fit_on_train(X_sub, X_val)
+
     T = X_sub_scaled.shape[1]
     p = X_sub_scaled.shape[2]
 
@@ -157,74 +159,40 @@ def train_tune_retrain_save_for_h(train_df, xt_cols, target_col, h,
             best_units = int(units)
             best_epoch = this_best_epoch
 
-    # 5) retrain final model on ALL training data
-    scaler_full, X_all_scaled, _ = scale_fit_on_train(X_all, None)
-
-    tf.keras.backend.clear_session()
-    tf.random.set_seed(seed)
-    np.random.seed(seed)
-
-    final_model = build_lstm(T, p, best_units, dropout=dropout, lr=lr)
-    final_model.fit(
-        X_all_scaled, y_all,
-        epochs=best_epoch,
-        batch_size=batch_size,
-        shuffle=False,
-        verbose=1
-    )
-
-    # 6) save with horizon-specific filenames (no override across horizons)
-    os.makedirs(save_dir, exist_ok=True)
-    model_path = os.path.join(save_dir, f"final_model_h{h}.keras")
-    scaler_path = os.path.join(save_dir, f"scaler_h{h}.pkl")
-    params_path = os.path.join(save_dir, f"params_h{h}.txt")
-
-    final_model.save(model_path)
-    joblib.dump(scaler_full, scaler_path)
-
-    with open(params_path, "w") as f:
-        f.write(f"target_col={target_col}\n")
-        f.write(f"best_units={best_units}\n")
-        f.write(f"best_epoch={best_epoch}\n")
-        f.write(f"best_val_loss={best_val_loss}\n")
-        f.write(f"dropout={dropout}\n")
-        f.write(f"lr={lr}\n")
-        f.write(f"batch_size={batch_size}\n")
-
-    info = {
+    return {
         "h": h,
         "target_col": target_col,
         "best_units": best_units,
         "best_epoch": best_epoch,
         "best_val_loss": best_val_loss,
-        "model_path": model_path,
-        "scaler_path": scaler_path
-    }
-    return final_model, scaler_full, info
+        "dropout": dropout,
+        "lr": lr,
+        "batch_size": batch_size
+    }   
 
 # --------------------------
-# Run for all horizons
+# Run tuning for all horizons, save ONLY hyperparameters
 # --------------------------
 horizons = [1, 3, 5, 7]
-models = {}
-scalers = {}
 infos = []
 
 for h in horizons:
     target_col = f"y_h{h}"
-    model, scaler, info = train_tune_retrain_save_for_h(train_df, xt_cols, target_col, h)
-    models[h] = model
-    scalers[h] = scaler
+    info = tune_lstm_for_h(train_df, xt_cols, target_col, h)
     infos.append(info)
 
-# Print summary table of chosen hyperparameters
-summary = pd.DataFrame(infos)[["h", "best_units", "best_epoch", "best_val_loss", "model_path"]]
-print("\nSummary of tuned hyperparameters:")
+summary = pd.DataFrame(infos)[["h", "best_units", "best_epoch", "best_val_loss", "dropout", "lr", "batch_size"]]
+print("\nLSTM tuning summary (hyperparameters only):")
 print(summary.sort_values("h"))
 
-# """ Summary of tuned hyperparameters:
-#    h  best_units  best_epoch  best_val_loss                      model_path
-# 0  1         128          42       0.780188  ../models/final_model_h1.keras
-# 1  3         128          52       1.182988  ../models/final_model_h3.keras
-# 2  5          16          69       1.086949  ../models/final_model_h5.keras
-# 3  7          64           7       1.071448  ../models/final_model_h7.keras """
+# Save hyperparameters to disk
+os.makedirs("../models", exist_ok=True)
+summary.to_csv("../models/lstm_tuned_hyperparams.csv", index=False)
+print("\nSaved to ../models/lstm_tuned_hyperparams.csv")
+
+# LSTM tuning summary (hyperparameters only):
+#    h  best_units  best_epoch  best_val_loss  dropout     lr  batch_size
+# 0  1          64          75       0.984143      0.2  0.001          64
+# 1  3          16          66       1.774219      0.2  0.001          64
+# 2  5          16          47       1.277434      0.2  0.001          64
+# 3  7          64           6       1.400542      0.2  0.001          64
