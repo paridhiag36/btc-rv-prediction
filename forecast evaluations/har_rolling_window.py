@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import os
+from sklearn.metrics import r2_score
+
 pd.set_option("display.float_format", lambda x: f"{x:,.4f}")
 
 # --- File Loading ---
@@ -91,7 +93,8 @@ def rolling_eval_linear(df, model_name, feature_cols, h, start_t):
 
     out = pd.DataFrame(rows)
     rmse = float(np.sqrt(np.mean(out["error"] ** 2)))
-    return out, rmse
+    r2 = float(r2_score(out["y_true"], out["y_pred"]))
+    return out, rmse, r2
 
 # --- MAIN ---
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -117,37 +120,37 @@ model_specs = {
 }
 
 all_preds = []
-rmse_rows = []
+summary_rows = []
 
 for model_name, feat_cols in model_specs.items():
     for h in HORIZONS:
-        pred_df, rmse_h = rolling_eval_linear(har_df, model_name, feat_cols, h, start_t)
+        pred_df, rmse_h, r2_h = rolling_eval_linear(har_df, model_name, feat_cols, h, start_t)
         all_preds.append(pred_df)
-        rmse_rows.append({"model": model_name, "h": h, "rmse": rmse_h})
-        print(f"{model_name} | h={h} | RMSE={rmse_h:.6f}")
+        summary_rows.append({"model": model_name, "h": h, "rmse": rmse_h, "r2":r2_h})
+        print(f"{model_name} | h={h} | RMSE={rmse_h:.6f} | R2= {r2_h:.6f}")
 
 preds_all = pd.concat(all_preds, ignore_index=True)
-rmse_df = pd.DataFrame(rmse_rows).sort_values(["model", "h"]).reset_index(drop=True)
+summary_df = pd.DataFrame(summary_rows).sort_values(["model", "h"]).reset_index(drop=True)
 
 preds_all.to_csv(OUT_PREDS_PATH, index=False)
-rmse_df.to_csv(OUT_RMSE_PATH, index=False)
+summary_df.to_csv(OUT_RMSE_PATH, index=False)
 
 print("\nSaved predictions to:", OUT_PREDS_PATH)
 print("Saved RMSE table to:", OUT_RMSE_PATH)
-print("\nRMSE summary:")
-print(rmse_df)
+print("\nSummary:")
+print(summary_df)
 
-# RMSE summary:
-#          model  h   rmse
-# 0       HAR-RV  1 0.8359
-# 1       HAR-RV  3 0.8098
-# 2       HAR-RV  5 0.8387
-# 3       HAR-RV  7 0.8500
-# 4     HAR-RV-J  1 0.8138
-# 5     HAR-RV-J  3 0.8075
-# 6     HAR-RV-J  5 0.8367
-# 7     HAR-RV-J  7 0.8497
-# 8   HAR-RV-J-H  1 0.8004
-# 9   HAR-RV-J-H  3 0.8047
-# 10  HAR-RV-J-H  5 0.8275
-# 11  HAR-RV-J-H  7 0.8556
+# Summary:
+#          model  h   rmse     r2
+# 0       HAR-RV  1 0.8359 0.1282
+# 1       HAR-RV  3 0.8098 0.1919
+# 2       HAR-RV  5 0.8387 0.1405
+# 3       HAR-RV  7 0.8500 0.1105
+# 4     HAR-RV-J  1 0.8138 0.1738
+# 5     HAR-RV-J  3 0.8075 0.1965
+# 6     HAR-RV-J  5 0.8367 0.1446
+# 7     HAR-RV-J  7 0.8497 0.1113
+# 8   HAR-RV-J-H  1 0.8004 0.2006
+# 9   HAR-RV-J-H  3 0.8047 0.2021
+# 10  HAR-RV-J-H  5 0.8275 0.1632
+# 11  HAR-RV-J-H  7 0.8556 0.0989
