@@ -8,8 +8,8 @@ import os
 TRAIN_DATA_PATH  = "../../data/train_dataset.csv"
 TEST_DATA_PATH   = "../../data/test_dataset.csv"          
 HYPERPARAMS_PATH = "../xgb_tuned_hyperparams.csv"        # CSV from xgb_tuning_final.ipynb
-OUT_PREDS_PATH   = "../forecast evaluations/xgb_outputs/xgb_rolling_oos_predictions.csv"
-OUT_RMSE_PATH    = "../forecast evaluations/xgb_outputs/xgb_rolling_oos_rmse.csv"
+OUT_PREDS_PATH   = "../../forecast evaluations/xgb_outputs/xgb_rolling_oos_predictions.csv"
+OUT_RMSE_PATH    = "../../forecast evaluations/xgb_outputs/xgb_rolling_oos_rmse.csv"
 
 DATE_FORMAT = "%Y-%m-%d"
 DATE_COL    = "date"
