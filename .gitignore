@@ -18,4 +18,6 @@ __pycache__/
 .vscode/
 
 # Data files (optional if large)
-# data/
+# data/.venv/
+data/btc_5min_binance_2021_2025.csv
+data/btc_hourly_binance_2021_2025.csv
