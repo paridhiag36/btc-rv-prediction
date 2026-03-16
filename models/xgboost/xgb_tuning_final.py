@@ -182,6 +182,6 @@ print("\nXGBoost tuning summary:")
 print(summary.sort_values("h").to_string(index=False))
 
 # Save hyperparameters to disk
-os.makedirs("../models/xgboost", exist_ok=True)
-summary.to_csv("../models/xgboost/xgb_tuned_hyperparams.csv", index=False)
-print("\nSaved to ../models/xgboost/xgb_tuned_hyperparams.csv")
+os.makedirs("../models", exist_ok=True)
+summary.to_csv("../models/xgb_tuned_hyperparams.csv", index=False)
+print("\nSaved to ../models/xgb_tuned_hyperparams.csv")
