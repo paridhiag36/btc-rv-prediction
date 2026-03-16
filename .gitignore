@@ -21,3 +21,4 @@ __pycache__/
 # data/.venv/
 data/btc_5min_binance_2021_2025.csv
 data/btc_hourly_binance_2021_2025.csv
+data/full_df.csv
