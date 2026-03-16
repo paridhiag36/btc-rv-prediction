@@ -1,13 +1,15 @@
+# import libraries
 import pandas as pd
 import numpy as np
 import xgboost as xgb
 import os
 
 # --------- CONFIG ----------
-FULL_DATA_PATH   = "../data/full_df.csv"                              # train + test concatenated
-HYPERPARAMS_PATH = "../models/xgb_tuned_hyperparams.csv"             # CSV from xgb_tuning_final.ipynb
-OUT_PREDS_PATH   = "../forecast evaluations/xgb_rolling_oos_predictions.csv"
-OUT_RMSE_PATH    = "../forecast evaluations/xgb_rolling_oos_rmse.csv"
+TRAIN_DATA_PATH  = "../../data/train_dataset.csv"
+TEST_DATA_PATH   = "../../data/test_dataset.csv"          
+HYPERPARAMS_PATH = "../xgb_tuned_hyperparams.csv"        # CSV from xgb_tuning_final.ipynb
+OUT_PREDS_PATH   = "../forecast evaluations/xgb_outputs/xgb_rolling_oos_predictions.csv"
+OUT_RMSE_PATH    = "../forecast evaluations/xgb_outputs/xgb_rolling_oos_rmse.csv"
 
 DATE_FORMAT = "%Y-%m-%d"
 DATE_COL    = "date"
@@ -17,7 +19,6 @@ WINDOW_SIZE  = 1095   # fixed rolling training window (~3 years daily) (same as 
 REFIT_EVERY  = 7      # weekly refit (same as LSTM)
 
 SEED = 0
-
 
 # --------- HELPERS ----------
 def get_xt_cols(df):
@@ -29,13 +30,13 @@ def get_xt_cols(df):
             and not c.endswith("_lag1")
             and not c.endswith("_lag2")
             and not c.endswith("_lag3"))
-    ]
 
+    ]
 
 def make_flat_features(df, base_cols, y_col):
     """
     Build flat [X_lag3 | X_lag2 | X_lag1 | X_t] feature matrix.
-    Captures the same temporal information as the LSTM 4-step sequence.
+    Captures the same temporal information as the 4-step sequence earlier.
     No standardisation needed — XGBoost is scale-invariant.
     """
     X_t  = df[base_cols].to_numpy()
@@ -46,7 +47,6 @@ def make_flat_features(df, base_cols, y_col):
     y = df[y_col].to_numpy().astype(np.float32)
     return X_flat, y
 
-
 def make_flat_row(df_one_row, base_cols):
     """Build a single-row flat feature vector for prediction at time t."""
     X_t  = df_one_row[base_cols].to_numpy()
@@ -54,7 +54,6 @@ def make_flat_row(df_one_row, base_cols):
     X_l2 = df_one_row[[f"{c}_lag2" for c in base_cols]].to_numpy()
     X_l3 = df_one_row[[f"{c}_lag3" for c in base_cols]].to_numpy()
     return np.concatenate([X_l3, X_l2, X_l1, X_t], axis=1).astype(np.float32)  # (1, 4*p)
-
 
 def fit_xgb_on_window(df_window, xt_cols, target_col, hp):
     """
@@ -123,14 +122,20 @@ def rolling_eval_one_h(full_df, xt_cols, h, hp, start_t):
     rmse = float(np.sqrt(np.nanmean(out["error"] ** 2)))
     return out, rmse
 
-
 # --------- MAIN ----------
-# Load full dataset (train + test concatenated)
-full_df = pd.read_csv(FULL_DATA_PATH)
-full_df[DATE_COL] = pd.to_datetime(full_df[DATE_COL], format=DATE_FORMAT, errors="raise")
-full_df = full_df.sort_values(DATE_COL).reset_index(drop=True)
+# Load train + test datasets
+train_df = pd.read_csv(TRAIN_DATA_PATH)
+train_df[DATE_COL] = pd.to_datetime(train_df[DATE_COL], format="%d/%m/%y", errors="raise")
+test_df = pd.read_csv(TEST_DATA_PATH)
+test_df[DATE_COL] = pd.to_datetime(test_df[DATE_COL], format=DATE_FORMAT, errors="raise")
 
-# Evaluation start date — consistent with test dataset and LSTM
+full_df = pd.concat([train_df, test_df], ignore_index=True)
+full_df = full_df.sort_values(DATE_COL).reset_index(drop=True)
+# print (train_df.shape, test_df.shape, full_df.shape)
+# print(train_df[DATE_COL].min(), train_df[DATE_COL].max()) # 2021-01-08 00:00:00 2024-06-28 00:00:00
+# print(test_df[DATE_COL].min(), test_df[DATE_COL].max()) # 2024-06-29 00:00:00 2025-12-24 00:00:00
+
+# Evaluation start date — consistent with test dataset as above
 EVAL_START_DATE = pd.to_datetime("2024-06-29")
 eval_start_idx  = int(full_df.index[full_df[DATE_COL] >= EVAL_START_DATE][0])
 start_t = max(WINDOW_SIZE, eval_start_idx)
@@ -149,6 +154,7 @@ hp_map = {
     }
     for _, r in hp_df.iterrows()
 }
+# print(hp_map)
 
 all_preds = []
 rmse_rows = []
