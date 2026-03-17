@@ -5,6 +5,8 @@ from sklearn.preprocessing import StandardScaler
 from tensorflow.keras import layers
 from tensorflow.keras.callbacks import EarlyStopping
 import os 
+from sklearn.metrics import r2_score
+
 
 # --------- CONFIG ----------
 FULL_DATA_PATH = "../data/full_df.csv"  # CHANGE if your full dataset file name differs
@@ -143,7 +145,8 @@ def rolling_eval_one_h(full_df, xt_cols, h, units, epochs, start_t):
     out = pd.DataFrame(rows)
     out["error"] = out["y_true"] - out["y_pred"]
     rmse = float(np.sqrt(np.nanmean(out["error"] ** 2)))
-    return out, rmse
+    r2 = float(r2_score(out["y_true"], out["y_pred"]))
+    return out, rmse, r2
 
 # --------- MAIN ----------
 # Load full dataset
@@ -174,12 +177,12 @@ for h in HORIZONS:
     epochs = hp_map[h]["epochs"]
 
     print(f"Running rolling eval for h={h} with units={units}, epochs={epochs} ...")
-    pred_df, rmse_h = rolling_eval_one_h(full_df, xt_cols, h, units, epochs, start_t)
+    pred_df, rmse_h, r2_h = rolling_eval_one_h(full_df, xt_cols, h, units, epochs, start_t)
 
     all_preds.append(pred_df)
-    rmse_rows.append({"h": h, "rmse": rmse_h, "units": units, "epochs": epochs})
+    rmse_rows.append({"h": h, "rmse": rmse_h, "r2": r2_h, "units": units, "epochs": epochs})
 
-    print(f"h={h} RMSE={rmse_h:.6f}")
+    print(f"h={h} RMSE={rmse_h:.6f} r2= {r2_h: 6f}")
 
 preds_all = pd.concat(all_preds, ignore_index=True)
 rmse_df = pd.DataFrame(rmse_rows).sort_values("h")
@@ -194,8 +197,9 @@ print("Saved RMSE table to:", OUT_RMSE_PATH)
 print("\nRMSE summary:")
 print(rmse_df)
 
-#    h      rmse  units  epochs
-#   1  0.830034     64      75
-#   3  0.945741     16      66
-#   5  0.970876     16      47
-#   7  1.041095     64       6
+""" RMSE summary:
+   h      rmse        r2  units  epochs
+0  1  0.815733  0.169742     64      70
+1  3  0.879390  0.047087    128      54
+2  5  1.028196 -0.291757     16      37
+3  7  0.807352  0.197631    128      50 """
