@@ -197,9 +197,9 @@ print("Saved RMSE table to:", OUT_RMSE_PATH)
 print("\nRMSE summary:")
 print(rmse_df)
 
-""" RMSE summary:
-   h      rmse        r2  units  epochs
-0  1  0.815733  0.169742     64      70
-1  3  0.879390  0.047087    128      54
-2  5  1.028196 -0.291757     16      37
-3  7  0.807352  0.197631    128      50 """
+# RMSE summary:
+#    h      rmse        r2  units  epochs
+# 0  1  0.785121  0.230887    128      66
+# 1  3  0.946351 -0.103556     16      61
+# 2  5  0.944629 -0.090314     16      58
+# 3  7  0.959048 -0.132215     16      56
