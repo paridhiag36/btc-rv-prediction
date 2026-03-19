@@ -186,7 +186,7 @@ summary = pd.DataFrame(infos)
 print("\nXGBoost tuning summary (test grid):")
 print(summary.sort_values("h").to_string(index=False))
 
-# Save hyperparameters to disk — separate file to avoid overwriting final params
+# Save hyperparameters to disk 
 os.makedirs("../models", exist_ok=True)
-summary.to_csv("../models/xgb_tuned_hyperparams_2.csv", index=False)
-print("\nSaved to ../models/xgb_tuned_hyperparams_2.csv")
+summary.to_csv("../models/xgb_tuned_hyperparams.csv", index=False)
+print("\nSaved to ../models/xgb_tuned_hyperparams.csv")
