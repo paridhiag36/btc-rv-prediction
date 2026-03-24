@@ -11,7 +11,7 @@ import matplotlib.ticker as mticker
 # -----------------------------------------------------------------------
 FULL_DATA_PATH  = "../data/full_df.csv"
 XGB_PARAM_PATH  = "../models/xgb_tuned_hyperparams.csv"
-OUT_DIR         = "../shap_outputs/xgb_shap_analysis"   # all outputs go here
+OUT_DIR         = "../model feature importance/xgb_shap_outputs"   # all outputs go here
 
 DATE_COL        = "date"
 TARGET_COLS     = ["y_h1", "y_h3", "y_h5", "y_h7"]
@@ -24,8 +24,8 @@ EVAL_START_DATE = pd.to_datetime("2024-06-29")
 # We refit every 7 days during rolling eval — here we sample every N_SHAP_STEP
 # refit points to keep compute tractable while still capturing how feature
 # importance evolves over the OOS period.
-N_SHAP_STEP = 5   # every 5th refit ≈ every 35 days → ~16 windows across OOS period
-SEED        = 0
+N_SHAP_STEP = 1   # every 1st refit ≈ every 7 days → ~156 windows across OOS period
+SEED        = 42
 
 # -----------------------------------------------------------------------
 # Feature group mapping
@@ -84,11 +84,11 @@ FEATURE_GROUPS = {
 }
 
 GROUP_COLORS = {
-    "Macro"      : "#4C72B0",
-    "Asset"      : "#DD8452",
-    "Blockchain" : "#55A868",
-    "Technical"  : "#C44E52",
-    "Sentiment"  : "#8172B2",
+    "Technical"  : "#4C78A8",
+    "Macro"      : "#F58518",
+    "Asset"      : "#54A24B",
+    "Blockchain" : "#E45756",
+    "Sentiment"  : "#B279A2",
 }
 
 
