@@ -13,7 +13,6 @@ def get_rf_params_val(Y, target_col):
     test_fold = np.concatenate([-1 * np.ones(split_idx), 0 * np.ones(len(Y) - split_idx)])
     ps = PredefinedSplit(test_fold)
     
-    # Range: 0.05 to 1.0 (5% to 100% of features)
     param_dist = {'max_features': uniform(0.10, 0.90)}
 
     rs = RandomizedSearchCV(

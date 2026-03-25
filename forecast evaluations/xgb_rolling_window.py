@@ -205,7 +205,14 @@ print("Saved summary table to:", OUT_RMSE_PATH)
 print("\nSummary:")
 print(summary_df)
 
-# Summary:
+# NEW Summary:
+#   model  h     rmse       r2  n_estimators  max_depth  learning_rate  subsample  colsample_bytree
+# XGBoost  1 0.690832 0.404527           174          2            0.1        0.7               0.5
+# XGBoost  3 0.769212 0.270908            73          2            0.1        0.5               0.5
+# XGBoost  5 0.732333 0.344692            40          2            0.1        0.5               0.5
+# XGBoost  7 0.730228 0.343605            84          2            0.1        0.5               0.5
+
+# OLD Summary:
 #      model  h      rmse        r2  n_estimators  max_depth  learning_rate  subsample  colsample_bytree
 # 0  XGBoost  1  0.680152  0.422796           186          3           0.05        0.7               1.0
 # 1  XGBoost  3  0.760595  0.287151            57          3           0.10        0.7               0.7

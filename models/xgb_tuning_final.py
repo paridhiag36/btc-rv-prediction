@@ -7,17 +7,11 @@ import xgboost as xgb
 import os
 
 # Load dataset
-train_df = pd.read_csv("../../data/train_dataset.csv")
+train_df = pd.read_csv("../data/train_dataset.csv")
 train_df["date"] = pd.to_datetime(train_df["date"], format="%d/%m/%y", errors="raise")
 train_df = train_df.sort_values("date").reset_index(drop=True)
-# print (train_df.head())
-# print(train_df.columns)
 
 # Define feature columns
-# XGBoost takes a flat 2D feature matrix — each row is the full information set at time t:
-#   [X_t | X_lag1 | X_lag2 | X_lag3]  (176 features = 44 base × 4 timesteps)
-# No standardisation is applied — XGBoost is a tree-based model and is scale-invariant.
-
 all_target_cols = ["y_h1", "y_h3", "y_h5", "y_h7"]
 exclude = set(["date"] + all_target_cols)
 
@@ -28,6 +22,7 @@ xt_cols = [
         and not c.endswith("_lag2")
         and not c.endswith("_lag3"))
 ]
+
 # Verify lag columns exist
 for lag in [1, 2, 3]:
     missing = [c for c in xt_cols if f"{c}_lag{lag}" not in train_df.columns]
@@ -49,45 +44,54 @@ def make_flat_features(df, base_cols, y_col):
     y = df[y_col].to_numpy().astype(np.float32)
     return X_flat, y
 
-# Quick Checks
-X_check, y_check = make_flat_features(train_df, xt_cols, "y_h1")
-print(f"X shape: {X_check.shape}")          # expect (1268, 176)
-print(f"y shape: {y_check.shape}")          # expect (1268,)
-print(f"NaNs in X: {np.isnan(X_check).sum()}")  # expect 0
-print(f"NaNs in y: {np.isnan(y_check).sum()}")  # expect 0
 
-print(f"\ny_h1 stats:\n{train_df['y_h1'].describe()}")
-
-print(f"\nDate range: {train_df['date'].min()} → {train_df['date'].max()}") # 2021-01-08 00:00:00 → 2024-06-28 00:00:00
-print(f"Total rows: {len(train_df)}") # 1268 ofc
-
-
-
-# Hyperparameter tuning via TimeSeriesSplit CV
 # -----------------------------------------------------------------------
-# TimeSeriesSplit is used instead of a single 80/20 split because:
-# - it is more robust for time-series. 
-# - it evaluates across multiple expanding windows and avoids over-fitting the hyperparameters to one particular validation period. 
-# - This is the standard approach for tree-based models.
+# REVISED HYPERPARAMETER GRID (aligned with prof's recommendations)
 #
-# Parameters tuned:
-#   max_depth        : tree depth — primary lever for complexity / overfitting
-#   learning_rate    : shrinkage; smaller = more trees needed but better generalisation
-#   subsample        : row subsampling per tree (variance reduction)
-#   colsample_bytree : feature subsampling per tree (further regularisation)
-# n_estimators is determined via early stopping on the last CV fold's
-# eval set, which avoids over-specifying this parameter in the grid.
+# Changes from xgb_tuning_final.py:
+#
+#   max_depth        : [3,5,7] → [2,5]
+#                      Prof recommends shallow trees (2 or 5); depth 7 is
+#                      too complex for a weak-learner boosting setup
+#
+#   learning_rate    : [0.01, 0.05, 0.1] → [0.01, 0.1]
+#                      Prof uses only these two anchor values; 0.05 is
+#                      redundant and bloats the grid
+#
+#   subsample        : [0.7, 1.0] → [0.5, 0.7]
+#                      Prof recommends bag.fraction=0.5; 1.0 means no
+#                      subsampling at all which removes a key regulariser
+#
+#   colsample_bytree : [0.7, 1.0] → [0.5, 0.7]
+#                      Same logic — include 0.5 as prof's example uses it
+#
+#   n_estimators     : cap raised from 1000 → 5000
+#                      Prof uses up to 10000 trees; with lr=0.01 you need
+#                      many more iterations to converge properly
+#
+#   early_stopping_rounds : 20 → 75
+#                      20 was too aggressive — at longer horizons (H=5,7)
+#                      noisier validation caused premature stopping at only
+#                      17-19 trees. 75 gives the model enough patience to
+#                      push through noisy validation periods
 # -----------------------------------------------------------------------
 
 SEED = 0
-N_SPLITS = 5   # TimeSeriesSplit folds
+N_SPLITS = 5
 
 PARAM_GRID = {
-    "max_depth"        : [3, 5, 7],
-    "learning_rate"    : [0.01, 0.05, 0.1],
-    "subsample"        : [0.7, 1.0],
-    "colsample_bytree" : [0.7, 1.0],
+    "max_depth"        : [2, 5],          # was [3, 5, 7]
+    "learning_rate"    : [0.01, 0.1],     # was [0.01, 0.05, 0.1]
+    "subsample"        : [0.5, 0.7],      # was [0.7, 1.0]
+    "colsample_bytree" : [0.5, 0.7],      # was [0.7, 1.0]
 }
+
+N_ESTIMATORS_CAP   = 5000   # was 1000
+EARLY_STOP_ROUNDS  = 75     # was 20
+
+print(f"\nGrid size: {2*2*2*2} combos x {N_SPLITS} folds = {2*2*2*2*N_SPLITS} fits per horizon")
+print(f"n_estimators cap : {N_ESTIMATORS_CAP}")
+print(f"early_stop_rounds: {EARLY_STOP_ROUNDS}\n")
 
 
 def tune_xgb_for_h(train_df, xt_cols, target_col, h,
@@ -121,13 +125,13 @@ def tune_xgb_for_h(train_df, xt_cols, target_col, h,
             X_val, y_val = X[val_idx], y[val_idx]
 
             model = xgb.XGBRegressor(
-                objective          = "reg:squarederror",
-                n_estimators       = 1000,
-                early_stopping_rounds = 20,
-                eval_metric        = "rmse",
-                random_state       = seed,
-                n_jobs             = -1,
-                verbosity          = 0,
+                objective             = "reg:squarederror",
+                n_estimators          = N_ESTIMATORS_CAP,
+                early_stopping_rounds = EARLY_STOP_ROUNDS,
+                eval_metric           = "rmse",
+                random_state          = seed,
+                n_jobs                = -1,
+                verbosity             = 0,
                 **params
             )
             model.fit(
@@ -161,6 +165,7 @@ def tune_xgb_for_h(train_df, xt_cols, target_col, h,
         "best_cv_rmse"     : best_rmse,
     }
 
+
 # Run tuning for all horizons
 horizons = [1, 3, 5, 7]
 infos = []
@@ -178,10 +183,10 @@ for h in horizons:
           f"colsample={info['best_colsample']}")
 
 summary = pd.DataFrame(infos)
-print("\nXGBoost tuning summary:")
+print("\nXGBoost tuning summary (test grid):")
 print(summary.sort_values("h").to_string(index=False))
 
-# Save hyperparameters to disk
+# Save hyperparameters to disk 
 os.makedirs("../models", exist_ok=True)
 summary.to_csv("../models/xgb_tuned_hyperparams.csv", index=False)
 print("\nSaved to ../models/xgb_tuned_hyperparams.csv")
