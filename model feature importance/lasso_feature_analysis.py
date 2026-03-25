@@ -14,7 +14,7 @@ from matplotlib.patches import Patch
 # -----------------------------------------------------------------------
 FULL_DATA_PATH   = "../data/full_df.csv"
 LASSO_PARAM_PATH = "../models/lasso_tuned_hyperparams.csv"
-OUT_DIR          = "../shap_outputs/lasso_feature_analysis"
+OUT_DIR          = "../model feature importance/lasso_feature_analysis"
 
 DATE_COL         = "date"
 TARGET_COLS      = ["y_h1", "y_h3", "y_h5", "y_h7"]
@@ -77,12 +77,13 @@ FEATURE_GROUPS = {
     "STOCH_K"  : "Technical",
     "log_RV"   : "Technical",
 }
+
 GROUP_COLORS = {
-    "Macro"      : "#4C72B0",
-    "Asset"      : "#DD8452",
-    "Blockchain" : "#55A868",
-    "Technical"  : "#C44E52",
-    "Sentiment"  : "#8172B2",
+    "Technical"  : "#4C78A8",
+    "Macro"      : "#F58518",
+    "Asset"      : "#54A24B",
+    "Blockchain" : "#E45756",
+    "Sentiment"  : "#B279A2",
 }
 
 # -----------------------------------------------------------------------
