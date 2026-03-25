@@ -24,7 +24,7 @@ EVAL_START_DATE = pd.to_datetime("2024-06-29")
 # We refit every 7 days during rolling eval — here we sample every N_SHAP_STEP
 # refit points to keep compute tractable while still capturing how feature
 # importance evolves over the OOS period.
-N_SHAP_STEP = 1   # every 1st refit ≈ every 7 days → ~156 windows across OOS period
+N_SHAP_STEP = 7   
 SEED        = 42
 
 # -----------------------------------------------------------------------
