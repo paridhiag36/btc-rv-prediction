@@ -434,7 +434,7 @@ for h in HORIZONS:
 # -----------------------------------------------------------------------
 unique_ever = freq_stats.groupby(["h", "Group"])["Feature_Lag"].nunique().unstack(fill_value=0)
 unique_ever["Total_Unique"] = unique_ever.sum(axis=1)
-print("\nTotal Unique Lags Selected (At least once):")
+print("\nTotal Unique Features Selected (At least once):")
 print(unique_ever)
 
 print("\n" + "=" * 50)
