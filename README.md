@@ -130,9 +130,6 @@ Examples:
 ### `figs/all_models/`
 Saved prediction-comparison and rolling-RMSE figures.
 
-### `shap_outputs/`
-Saved SHAP importance tables and visualisations.
-
 ## Data and feature construction
 
 ### 1. Realised volatility target
