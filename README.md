@@ -37,6 +37,7 @@ It also includes:
   - SHAP for tree-based models
   - Permutation feature importance for SVR
   - coefficient/selection-style analysis for linear models
+  - SHAP for LSTM
 
 ## Repository structure
 
